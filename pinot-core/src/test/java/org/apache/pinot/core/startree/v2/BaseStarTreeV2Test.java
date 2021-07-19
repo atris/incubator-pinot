@@ -94,7 +94,7 @@ abstract class BaseStarTreeV2Test<R, A> {
   private static final String DIMENSION_D2 = "d2";
   private static final int DIMENSION_CARDINALITY = 100;
   private static final String METRIC = "m";
-  private static final String QUERY_FILTER = " WHERE d1 = 0 AND d2 < 10";
+  private static final String QUERY_FILTER = " WHERE d1 < 3 OR d2 > 98";
   private static final String QUERY_GROUP_BY = " GROUP BY d2";
 
   private ValueAggregator _valueAggregator;
@@ -123,6 +123,9 @@ abstract class BaseStarTreeV2Test<R, A> {
       GenericRow segmentRecord = new GenericRow();
       segmentRecord.putValue(DIMENSION_D1, RANDOM.nextInt(DIMENSION_CARDINALITY));
       segmentRecord.putValue(DIMENSION_D2, RANDOM.nextInt(DIMENSION_CARDINALITY));
+
+      //segmentRecord.putValue(DIMENSION_D1, i);
+      //segmentRecord.putValue(DIMENSION_D2, i);
       if (rawValueType != null) {
         segmentRecord.putValue(METRIC, getRandomRawValue(RANDOM));
       }
@@ -169,6 +172,8 @@ abstract class BaseStarTreeV2Test<R, A> {
     }
 
     String baseQuery = String.format("SELECT %s FROM %s", aggregation, TABLE_NAME);
+    testQuery(baseQuery + QUERY_FILTER);
+    testQuery(baseQuery + QUERY_FILTER + QUERY_GROUP_BY);
     testQuery(baseQuery);
     testQuery(baseQuery + QUERY_FILTER);
     testQuery(baseQuery + QUERY_GROUP_BY);
@@ -211,9 +216,11 @@ abstract class BaseStarTreeV2Test<R, A> {
         StarTreeUtils.extractPredicateEvaluatorsMap(_indexSegment, filter);
     assertNotNull(predicateEvaluatorsMap);
 
+    FilterContext.Type filterContextType = filter != null ? filter.getType() : null;
+
     // Extract values with star-tree
     PlanNode starTreeFilterPlanNode =
-        new StarTreeFilterPlanNode(_starTreeV2, predicateEvaluatorsMap, groupByColumnSet, null);
+        new StarTreeFilterPlanNode(_starTreeV2, predicateEvaluatorsMap, groupByColumnSet, null, filterContextType);
     List<ForwardIndexReader> starTreeAggregationColumnReaders = new ArrayList<>(numAggregations);
     for (AggregationFunctionColumnPair aggregationFunctionColumnPair : aggregationFunctionColumnPairs) {
       starTreeAggregationColumnReaders
@@ -248,6 +255,10 @@ abstract class BaseStarTreeV2Test<R, A> {
         computeNonStarTreeResult(nonStarTreeFilterPlanNode, nonStarTreeAggregationColumnReaders,
             nonStarTreeAggregationColumnDictionaries, nonStarTreeGroupByColumnReaders);
 
+    //TODO:atri
+    System.out.println("Query1" + " " + query);
+    System.out.println("Tree result1 " + starTreeResult.size() + " " + "Non tree result1 " + nonStarTreeResult.size());
+
     // Assert results
     assertEquals(starTreeResult.size(), nonStarTreeResult.size());
     for (Map.Entry<List<Integer>, List<Object>> entry : starTreeResult.entrySet()) {
@@ -280,7 +291,12 @@ abstract class BaseStarTreeV2Test<R, A> {
 
       BlockDocIdIterator docIdIterator = starTreeFilterPlanNode.run().nextBlock().getBlockDocIdSet().iterator();
       int docId;
+
+      //TODO: atri
+      ArrayList list1 = new ArrayList();
+
       while ((docId = docIdIterator.next()) != Constants.EOF) {
+        list1.add(docId);
         // Array of dictionary ids (zero-length array for non-group-by queries)
         List<Integer> group = new ArrayList<>(numGroupByColumns);
         for (int i = 0; i < numGroupByColumns; i++) {
@@ -300,6 +316,9 @@ abstract class BaseStarTreeV2Test<R, A> {
           }
         }
       }
+      //TODO: atri
+      System.out.println("Tree1" + list1);
+
       return result;
     } finally {
       for (ForwardIndexReaderContext readerContext : aggregationColumnReaderContexts) {
@@ -351,8 +370,13 @@ abstract class BaseStarTreeV2Test<R, A> {
       }
 
       BlockDocIdIterator docIdIterator = nonStarTreeFilterPlanNode.run().nextBlock().getBlockDocIdSet().iterator();
+
+      //TODO: atri
+      ArrayList list1 = new ArrayList();
+
       int docId;
       while ((docId = docIdIterator.next()) != Constants.EOF) {
+        list1.add(docId);
         // Array of dictionary ids (zero-length array for non-group-by queries)
         List<Integer> group = new ArrayList<>(numGroupByColumns);
         for (int i = 0; i < numGroupByColumns; i++) {
@@ -387,6 +411,9 @@ abstract class BaseStarTreeV2Test<R, A> {
           }
         }
       }
+      //TODO: atri
+      System.out.println("Non tree1 " + list1);
+
       return result;
     } finally {
       for (ForwardIndexReaderContext readerContext : aggregationColumnReaderContexts) {

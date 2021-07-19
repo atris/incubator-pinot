@@ -99,11 +99,9 @@ public class StarTreeUtils {
     while ((filterNode = queue.poll()) != null) {
       switch (filterNode.getType()) {
         case AND:
+        case OR:
           queue.addAll(filterNode.getChildren());
           break;
-        case OR:
-          // Star-tree does not support OR filter
-          return null;
         case PREDICATE:
           Predicate predicate = filterNode.getPredicate();
           ExpressionContext lhs = predicate.getLhs();

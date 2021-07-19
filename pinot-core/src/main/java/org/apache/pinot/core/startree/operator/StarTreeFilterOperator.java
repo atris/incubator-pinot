@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.apache.pinot.common.request.context.FilterContext;
 import org.apache.pinot.core.operator.blocks.EmptyFilterBlock;
 import org.apache.pinot.core.operator.blocks.FilterBlock;
 import org.apache.pinot.core.operator.filter.BaseFilterOperator;
@@ -124,10 +125,12 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
   private final Set<String> _groupByColumns;
 
   private final Map<String, String> _debugOptions;
+  private final FilterContext.Type _filterContextType;
+
   boolean _resultEmpty = false;
 
   public StarTreeFilterOperator(StarTreeV2 starTreeV2, Map<String, List<PredicateEvaluator>> predicateEvaluatorsMap,
-      Set<String> groupByColumns, @Nullable Map<String, String> debugOptions) {
+      Set<String> groupByColumns, @Nullable Map<String, String> debugOptions, FilterContext.Type filterContextType) {
     _starTreeV2 = starTreeV2;
     _predicateEvaluatorsMap = predicateEvaluatorsMap;
     _debugOptions = debugOptions;
@@ -139,6 +142,8 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
     } else {
       _groupByColumns = Collections.emptySet();
     }
+
+    _filterContextType = filterContextType;
   }
 
   @Override
@@ -167,7 +172,8 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
    * </ul>
    */
   private BaseFilterOperator getFilterOperator() {
-    StarTreeResult starTreeResult = traverseStarTree();
+    //StarTreeResult starTreeResult1 = traverseStarTree(1);
+    StarTreeResult starTreeResult = traverseStarTree(2);
 
     // If star tree result is null, the result for the filter operator will be empty, early terminate
     if (starTreeResult == null) {
@@ -181,6 +187,9 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
     // Add the bitmap of matching documents from star tree
     childFilterOperators.add(new BitmapBasedFilterOperator(starTreeResult._matchedDocIds, false, numDocs));
 
+    // Add the bitmap of matching documents from star tree
+    //childFilterOperators.add(new BitmapBasedFilterOperator(starTreeResult1._matchedDocIds, false, numDocs));
+
     // Add remaining predicates
     for (String remainingPredicateColumn : starTreeResult._remainingPredicateColumns) {
       List<PredicateEvaluator> predicateEvaluators = _predicateEvaluatorsMap.get(remainingPredicateColumn);
@@ -190,6 +199,11 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
       }
     }
 
+    if (_filterContextType != null && _filterContextType == FilterContext.Type.OR) {
+      return FilterOperatorUtils.getOrFilterOperator(childFilterOperators, numDocs, _debugOptions);
+    }
+
+    // By default, return AND operator
     return FilterOperatorUtils.getAndFilterOperator(childFilterOperators, numDocs, _debugOptions);
   }
 
@@ -199,7 +213,7 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
    * filter operator is empty).
    */
   @Nullable
-  private StarTreeResult traverseStarTree() {
+  private StarTreeResult traverseStarTree(int i) {
     MutableRoaringBitmap matchingDocIds = new MutableRoaringBitmap();
     Set<String> remainingPredicateColumns = new HashSet<>();
     Map<String, IntSet> matchingDictIdsMap = new HashMap<>();
@@ -208,9 +222,20 @@ public class StarTreeFilterOperator extends BaseFilterOperator {
     List<String> dimensionNames = starTree.getDimensionNames();
     StarTreeNode starTreeRootNode = starTree.getRoot();
 
+    /*
+    //TODO: atri
+    Set<String> fooBar = new HashSet<>();
+    Iterator iterator1 = _predicateEvaluatorsMap.keySet().iterator();
+
+    for (int j = 1; j < i; j++) {
+      iterator1.next();
+    }
+    fooBar.add((String) iterator1 .next());*/
+
     // Use BFS to traverse the star tree
     Queue<SearchEntry> queue = new LinkedList<>();
     queue.add(new SearchEntry(starTreeRootNode, _predicateEvaluatorsMap.keySet(), _groupByColumns));
+    //queue.add(new SearchEntry(starTreeRootNode, fooBar, _groupByColumns));
     SearchEntry searchEntry;
     while ((searchEntry = queue.poll()) != null) {
       StarTreeNode starTreeNode = searchEntry._starTreeNode;

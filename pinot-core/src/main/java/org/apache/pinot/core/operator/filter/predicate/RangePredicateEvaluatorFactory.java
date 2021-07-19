@@ -172,6 +172,11 @@ public class RangePredicateEvaluatorFactory {
 
     @Override
     public boolean applySV(int dictId) {
+      //TODO: atri
+      if (_startDictId <= dictId && _endDictId > dictId) {
+        int i = 0;
+      }
+
       return _startDictId <= dictId && _endDictId > dictId;
     }
 

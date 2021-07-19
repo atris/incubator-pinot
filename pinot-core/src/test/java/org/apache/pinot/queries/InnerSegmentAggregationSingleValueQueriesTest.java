@@ -50,7 +50,7 @@ public class InnerSegmentAggregationSingleValueQueriesTest extends BaseSingleVal
 
   @Test
   public void testAggregationOnly() {
-    String query = "SELECT" + AGGREGATION + " FROM testTable";
+    String query = "SELECT" + AGGREGATION + " FROM testTable WHERE column9 < 5 OR column9 > 12";
 
     // Test query without filter.
     AggregationOperator aggregationOperator = getOperatorForPqlQuery(query);

@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.apache.pinot.common.request.context.FilterContext;
+import org.apache.pinot.common.request.context.FunctionContext;
 import org.apache.pinot.core.operator.ProjectionOperator;
 import org.apache.pinot.core.operator.filter.predicate.PredicateEvaluator;
 import org.apache.pinot.core.plan.PlanNode;
@@ -36,13 +38,13 @@ public class StarTreeProjectionPlanNode implements PlanNode {
 
   public StarTreeProjectionPlanNode(StarTreeV2 starTreeV2, Set<String> projectionColumns,
       Map<String, List<PredicateEvaluator>> predicateEvaluatorsMap, @Nullable Set<String> groupByColumns,
-      @Nullable Map<String, String> debugOptions) {
+      @Nullable Map<String, String> debugOptions, FilterContext.Type filterType) {
     _dataSourceMap = new HashMap<>();
     for (String projectionColumn : projectionColumns) {
       _dataSourceMap.put(projectionColumn, starTreeV2.getDataSource(projectionColumn));
     }
     _starTreeDocIdSetPlanNode =
-        new StarTreeDocIdSetPlanNode(starTreeV2, predicateEvaluatorsMap, groupByColumns, debugOptions);
+        new StarTreeDocIdSetPlanNode(starTreeV2, predicateEvaluatorsMap, groupByColumns, debugOptions, filterType);
   }
 
   @Override

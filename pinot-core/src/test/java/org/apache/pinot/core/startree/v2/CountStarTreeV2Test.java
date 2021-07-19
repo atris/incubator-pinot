@@ -45,6 +45,7 @@ public class CountStarTreeV2Test extends BaseStarTreeV2Test<Void, Long> {
 
   @Override
   protected void assertAggregatedValue(Long starTreeResult, Long nonStarTreeResult) {
+    System.out.println("Tree value1 " + starTreeResult + " non tree value1 " + nonStarTreeResult);
     assertEquals(starTreeResult, nonStarTreeResult);
   }
 }
