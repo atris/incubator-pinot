@@ -60,9 +60,9 @@ public class FSTBuilderTest {
     @Test
     public void testFSTBuilder() throws IOException {
         SortedMap<String, Integer> x = new TreeMap<>();
-        x.put("hello-world", 12);
-        x.put("hello-world123", 21);
-        x.put("still", 123);
+        x.put("hel12", 12);
+        //x.put("hello-world123", 21);
+        //x.put("still", 123);
 
         FST<Long> fst = FSTBuilder.buildFST(x);
         File outputFile = new File(TEMP_DIR, "test.lucene");
@@ -84,7 +84,7 @@ public class FSTBuilderTest {
                 pinotDataBuffer, 0L, fstFile.length());
         FST<Long> readFST = new FST(indexInput, outputs, new OffHeapFSTStore());
 
-        List<Long> results = RegexpMatcher.regexMatch("hello.*123", fst);
+        List<Long> results = RegexpMatcher.regexMatch("he.*12", fst);
         Assert.assertEquals(results.size(), 1);
         Assert.assertEquals(results.get(0).longValue(), 21L);
 
