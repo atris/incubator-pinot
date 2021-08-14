@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.Set;
 import org.apache.pinot.fsa.FSA;
 import org.apache.pinot.fsa.FSA5;
@@ -192,6 +193,9 @@ public final class FSA5Serializer implements FSASerializer {
     boolean gtlUnchanged = emitArcs(fsa, os, linearized, gtl, nodeDataLength);
     assert gtlUnchanged : "gtl changed in the final pass.";
 
+    //TODO: atri
+    System.out.println("VAL IS " + offsets.toString());
+
     return os;
   }
 
@@ -274,10 +278,20 @@ public final class FSA5Serializer implements FSASerializer {
         int targetOffset;
         final int target;
         if (fsa.isArcTerminal(arc)) {
+          //TODO: atri
+          System.out.println(("AAAAAAH " + (char) fsa.getArcLabel(arc)) + " for arc " + arc);
+
           targetOffset = 0;
           target = 0;
         } else {
           target = fsa.getEndNode(arc);
+
+          //TODO: atri
+          System.out.println((char) fsa.getArcLabel(arc));
+          if ((char) fsa.getArcLabel(arc) == 'e') {
+            System.out.println("IS BARBARBAR");
+          }
+
           targetOffset = offsets.get(target);
         }
 
@@ -293,6 +307,12 @@ public final class FSA5Serializer implements FSASerializer {
             flags |= FSA5.BIT_TARGET_NEXT;
             targetOffset = 0;
           }
+        }
+
+        //TODO: atri
+        if (fsa.isArcFinal(arc)) {
+          System.out.println("ISARCFINAL " + arc + " val " + (char) fsa.getArcLabel(arc) + " target " + targetOffset);
+
         }
 
         int bytes = emitArc(bb, os, gtl, flags, fsa.getArcLabel(arc), targetOffset);
@@ -314,6 +334,7 @@ public final class FSA5Serializer implements FSASerializer {
 
     flags |= (targetOffset << 3);
     bb.put(label);
+
     for (int b = 0; b < arcBytes; b++) {
       bb.put((byte) flags);
       flags >>>= 8;

@@ -28,7 +28,6 @@ import java.util.Set;
 import org.apache.pinot.fsa.FSA;
 import org.apache.pinot.fsa.FSATraversal;
 import org.apache.pinot.fsa.automaton.Automaton;
-import org.apache.pinot.fsa.automaton.CharacterRunAutomaton;
 import org.apache.pinot.fsa.automaton.RegExp;
 import org.apache.pinot.fsa.automaton.State;
 import org.apache.pinot.fsa.automaton.Transition;
@@ -58,12 +57,6 @@ public class RegexpMatcher {
       throws IOException {
     RegexpMatcher matcher = new RegexpMatcher(regexQuery, fst);
     return matcher.regexMatchOnFST();
-  }
-
-  // Matches "input" string with _regexQuery Automaton.
-  public boolean match(String input) {
-    CharacterRunAutomaton characterRunAutomaton = new CharacterRunAutomaton(_automaton);
-    return characterRunAutomaton.run(input);
   }
 
   /**
@@ -104,6 +97,9 @@ public class RegexpMatcher {
 
     Transition t = new Transition(); */
 
+  //TODO: atri
+    System.out.println(_fsa.getOutputSymbols());
+
     Set<State> acceptStates = _automaton.getAcceptStates();
     while (queue.size() != 0) {
       final Path path = queue.remove(queue.size() - 1);
@@ -115,7 +111,7 @@ public class RegexpMatcher {
         //System.out.println("I AM COMPLETE BRO " + path.state);
         if (_fsa.isArcFinal(path.fstArc)) {
           //TODO: atri
-          //System.out.println("DOING IT " + path.fstArc + " " + path.node + " " + path.state + " " + (char) _fst.getArcLabel(path.fstArc));
+          System.out.println("DOING IT " + path.fstArc + " " + (char) _fsa.getArcLabel(path.fstArc));
 
           endNodes.add((long) path.fstArc);
         }
@@ -134,7 +130,7 @@ public class RegexpMatcher {
           int arc = _fsa.getArc(path.node, (byte) t.min);
 
           //TODO: atri
-          System.out.println("ARC IS " + arc + " FOR ARC " + path.fstArc + " for transition " + (char) t.min + " state" + path.state + " transition out " + t.to);
+          //System.out.println("ARC IS " + arc + " FOR ARC " + path.fstArc + " for transition " + (char) t.min + " state" + path.state + " transition out " + t.to);
 
           if (arc != 0) {
             //TODO: atri
@@ -146,7 +142,7 @@ public class RegexpMatcher {
             }*/
 
             //TODO: atri -- see why output symbols are missing and fix it
-            System.out.println("ADDING PATH for arc " + arc +  " " + _fsa.getEndNode(arc) + " " + _fsa.getFirstArc(_fsa.getEndNode(arc)));
+            //System.out.println("ADDING PATH for arc " + arc +  " " + _fsa.getEndNode(arc) + " " + _fsa.getFirstArc(_fsa.getEndNode(arc)));
             queue.add(new Path(t.to, _fsa.getEndNode(arc), arc, -1));
           }
         } else {
@@ -168,7 +164,7 @@ public class RegexpMatcher {
 
             //TODO: atri -- see why output symbols are missing and fix it
             //TODO: atri
-            System.out.println("ADDING PATH for arc " + arc +  " " + _fsa.getEndNode(arc) + " " + _fsa.getFirstArc(_fsa.getEndNode(arc)));
+            //System.out.println("ADDING PATH for arc " + arc +  " " + _fsa.getEndNode(arc) + " " + _fsa.getFirstArc(_fsa.getEndNode(arc)));
 
             queue.add(new Path(t.to, _fsa.getEndNode(arc), arc, -1));
 

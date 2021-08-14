@@ -18,8 +18,12 @@
  */
 package org.apache.pinot.fsa.builders;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.apache.pinot.fsa.FSA;
 
 
@@ -222,7 +226,7 @@ public final class FSABuilder {
       setArcTarget(p, i == len ? ConstantArcSizeFSA.TERMINAL_STATE : activePath[i]);
 
       //TODO: atri
-      System.out.println("PUTTING CHAR " + (char) sequence[j - 1] + " " + "at " + p);
+      //System.out.println("PUTTING CHAR " + (char) sequence[j - 1] + " " + "at " + p);
       int foo = i == len ? ConstantArcSizeFSA.TERMINAL_STATE : activePath[i];
       //System.out.println("ARC PUTTING for " + p + " for symbol " + (char) sequence[j - 1] + " and target " + foo);
 
@@ -237,7 +241,14 @@ public final class FSABuilder {
       prevArc = p;
     }
 
-    outputSymbols.put(prevArc, outputSymbol);
+    //TODO: atri
+    if (sequence.length > 0) {
+      System.out.println(
+          "Putting value " + outputSymbol + " for " + (char) sequence[sequence.length - 1] + " for arc " + prevArc);
+
+      outputSymbols.put(activePath[len - 1], outputSymbol);
+    }
+
     
     // Save last sequence's length so that we don't need to calculate it again.
     this.activePathLen = len;
@@ -272,6 +283,7 @@ public final class FSABuilder {
         (this.serialized.length + this.hashSet.length * 4) / (double) MB);
 
     final FSA fsa = new ConstantArcSizeFSA(java.util.Arrays.copyOf(this.serialized, this.size), epsilon, outputSymbols);
+
     this.serialized = null;
     this.hashSet = null;
     return fsa;

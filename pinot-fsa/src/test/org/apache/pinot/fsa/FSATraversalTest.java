@@ -65,11 +65,12 @@ public final class FSATraversalTest extends TestBase {
 
     FSABuilder fsaBuilder = new FSABuilder();
 
-    for (byte[] currentArray : bytesArray) {
+    /*for (byte[] currentArray : bytesArray) {
       fsaBuilder.add(currentArray, 0, currentArray.length, -1);
-    }
+    }*/
 
-    regexFSA = fsaBuilder.complete();
+    //regexFSA = fsaBuilder.complete();
+    regexFSA = null;
   }
 
   @Test
