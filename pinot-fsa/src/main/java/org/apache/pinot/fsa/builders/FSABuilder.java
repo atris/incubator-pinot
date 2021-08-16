@@ -222,12 +222,12 @@ public final class FSABuilder {
       serialized[p + ConstantArcSizeFSA.OUTPUT_SYMBOL_OFFSET] = ((Integer) outputSymbol).byteValue();
 
       //TODO: atri
-      System.out.println("OFFSETS ARE " + ConstantArcSizeFSA.FLAGS_OFFSET + " " + ConstantArcSizeFSA.LABEL_OFFSET + " " + ConstantArcSizeFSA.OUTPUT_SYMBOL_OFFSET);
+      //System.out.println("OFFSETS ARE " + ConstantArcSizeFSA.FLAGS_OFFSET + " " + ConstantArcSizeFSA.LABEL_OFFSET + " " + ConstantArcSizeFSA.OUTPUT_SYMBOL_OFFSET);
 
       setArcTarget(p, i == len ? ConstantArcSizeFSA.TERMINAL_STATE : activePath[i]);
 
       //TODO: atri
-      System.out.println("PUTTING CHAR " + (char) sequence[j - 1] + " " + "at " + p);
+      //System.out.println("PUTTING CHAR " + (char) sequence[j - 1] + " " + "at " + p);
       int foo = i == len ? ConstantArcSizeFSA.TERMINAL_STATE : activePath[i];
       //System.out.println("ARC PUTTING for " + p + " for symbol " + (char) sequence[j - 1] + " and target " + foo);
 

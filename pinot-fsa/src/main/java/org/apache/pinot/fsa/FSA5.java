@@ -256,6 +256,8 @@ public final class FSA5 extends FSA {
    */
   @Override
   public byte getArcLabel(int arc) {
+    //TODO: atri
+    System.out.println("ARC IS " + arc + " and value is " + (char) arcs[arc]);
     return arcs[arc];
   }
 

@@ -42,7 +42,7 @@ final class ConstantArcSizeFSA extends FSA {
   public final static int LABEL_SIZE = 1;
 
   /** Size of the output symbol field */
-  public final static int OUTPUT_SYMBOL_SIZE = 1;
+  public final static int OUTPUT_SYMBOL_SIZE = Integer.BYTES;
 
   /**
    * Size of a single arc structure.

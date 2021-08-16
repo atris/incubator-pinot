@@ -238,7 +238,7 @@ public final class FSATraversalTest extends TestBase {
 
     List<Long> results = RegexpMatcher.regexMatch("cars?", fsa);
 
-    assertEquals(results.size(), 2);
+    assertEquals(2, results.size());
   }
 
   @Test

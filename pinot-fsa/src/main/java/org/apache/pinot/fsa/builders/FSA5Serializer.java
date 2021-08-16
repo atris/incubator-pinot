@@ -34,6 +34,7 @@ import org.apache.pinot.fsa.FSAFlags;
 import org.apache.pinot.fsa.FSAHeader;
 
 import static org.apache.pinot.fsa.FSAFlags.*;
+import static org.apache.pinot.fsa.builders.ConstantArcSizeFSA.LABEL_SIZE;
 
 
 /**
@@ -52,7 +53,7 @@ public final class FSA5Serializer implements FSASerializer {
   /**
    * Maximum number of bytes for a serialized arc.
    */
-  private final static int MAX_ARC_SIZE = 1 + 5;
+  private final static int MAX_ARC_SIZE = LABEL_SIZE + 5 + Integer.BYTES;
 
   /**
    * Maximum number of bytes for per-node data.
@@ -192,6 +193,11 @@ public final class FSA5Serializer implements FSASerializer {
     boolean gtlUnchanged = emitArcs(fsa, os, linearized, gtl, nodeDataLength);
     assert gtlUnchanged : "gtl changed in the final pass.";
 
+    //TODO: atri
+    //System.out.println("Offsets is " + offsets.toString());
+    System.out.println("Output symbols map is " + fsa.getOutputSymbols().toString());
+    System.out.println("Val is " + os.toString());
+
     return os;
   }
 
@@ -249,14 +255,14 @@ public final class FSA5Serializer implements FSASerializer {
 
     // Add dummy terminal state.
     offset += emitNodeData(bb, os, nodeDataLength, 0);
-    offset += emitArc(bb, os, gtl, 0, (byte) 0, 0);
+    offset += emitArc(bb, os, gtl, 0, (byte) 0, -1, 0);
 
     // Add epsilon state.
     offset += emitNodeData(bb, os, nodeDataLength, 0);
     if (fsa.getRootNode() != 0)
-      offset += emitArc(bb, os, gtl, FSA5.BIT_LAST_ARC | FSA5.BIT_TARGET_NEXT, (byte) '^', 0);
+      offset += emitArc(bb, os, gtl, FSA5.BIT_LAST_ARC | FSA5.BIT_TARGET_NEXT, (byte) '^', -1, 0);
     else
-      offset += emitArc(bb, os, gtl, FSA5.BIT_LAST_ARC, (byte) '^', 0);
+      offset += emitArc(bb, os, gtl, FSA5.BIT_LAST_ARC, (byte) '^', -1,  0);
 
     int maxStates = linearized.length;
     for (int j = 0; j < maxStates; j++) {
@@ -295,7 +301,9 @@ public final class FSA5Serializer implements FSASerializer {
           }
         }
 
-        int bytes = emitArc(bb, os, gtl, flags, fsa.getArcLabel(arc), targetOffset);
+        //TODO: atri
+        int bytes = emitArc(bb, os, gtl, flags, fsa.getArcLabel(arc), 999, targetOffset);
+        //int bytes = emitArc(bb, os, gtl, flags, fsa.getArcLabel(arc), (byte) fsa.getOutputSymbol(arc), targetOffset);
         if (bytes < 0)
           // gtl too small. interrupt eagerly.
           return false;
@@ -304,19 +312,27 @@ public final class FSA5Serializer implements FSASerializer {
       }
     }
 
+
     return true;
   }
 
   /** */
-  private int emitArc(ByteBuffer bb, OutputStream os, int gtl, int flags, byte label, int targetOffset)
+  private int emitArc(ByteBuffer bb, OutputStream os, int gtl, int flags, byte label, int outputSymbol,
+      int targetOffset)
       throws IOException {
     int arcBytes = (flags & FSA5.BIT_TARGET_NEXT) != 0 ? SIZEOF_FLAGS : gtl;
 
     flags |= (targetOffset << 3);
     bb.put(label);
+    //bb.put(outputSymbol);
+
     for (int b = 0; b < arcBytes; b++) {
       bb.put((byte) flags);
       flags >>>= 8;
+    }
+
+    if (outputSymbol != -1 && (flags & FSA5.BIT_FINAL_ARC) != 0) {
+      bb.putInt(outputSymbol);
     }
 
     if (flags != 0) {
