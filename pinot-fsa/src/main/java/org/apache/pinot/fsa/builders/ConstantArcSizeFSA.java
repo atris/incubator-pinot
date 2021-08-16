@@ -56,7 +56,7 @@ final class ConstantArcSizeFSA extends FSA {
   public final static int LABEL_OFFSET = FLAGS_SIZE;
 
   /** Offset of the output symbol field inside an arc. */
-  public final static int OUTPUT_SYMBOL_OFFSET = LABEL_SIZE;
+  public final static int OUTPUT_SYMBOL_OFFSET = LABEL_OFFSET + LABEL_SIZE;
 
   /** Offset of the address field inside an arc. */
   public final static int ADDRESS_OFFSET = OUTPUT_SYMBOL_OFFSET + OUTPUT_SYMBOL_SIZE;
