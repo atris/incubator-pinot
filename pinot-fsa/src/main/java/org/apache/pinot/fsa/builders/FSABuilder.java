@@ -219,6 +219,11 @@ public final class FSABuilder {
 
       serialized[p + ConstantArcSizeFSA.FLAGS_OFFSET] = (byte) (i == len ? ConstantArcSizeFSA.BIT_ARC_FINAL : 0);
       serialized[p + ConstantArcSizeFSA.LABEL_OFFSET] = sequence[j++];
+      //serialized[p + ConstantArcSizeFSA.OUTPUT_SYMBOL_OFFSET] = ((Integer) outputSymbol).byteValue();
+
+      //TODO: atri
+      System.out.println("OFFSETS ARE " + ConstantArcSizeFSA.FLAGS_OFFSET + " " + ConstantArcSizeFSA.LABEL_OFFSET + " " + ConstantArcSizeFSA.OUTPUT_SYMBOL_OFFSET);
+
       setArcTarget(p, i == len ? ConstantArcSizeFSA.TERMINAL_STATE : activePath[i]);
 
       //TODO: atri

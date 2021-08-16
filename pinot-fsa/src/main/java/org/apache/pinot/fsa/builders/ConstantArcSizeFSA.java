@@ -41,10 +41,13 @@ final class ConstantArcSizeFSA extends FSA {
   /** Size of the label field (constant for the builder). */
   public final static int LABEL_SIZE = 1;
 
+  /** Size of the output symbol field */
+  public final static int OUTPUT_SYMBOL_SIZE = 1;
+
   /**
    * Size of a single arc structure.
    */
-  public final static int ARC_SIZE = FLAGS_SIZE + LABEL_SIZE + TARGET_ADDRESS_SIZE;
+  public final static int ARC_SIZE = FLAGS_SIZE + LABEL_SIZE + OUTPUT_SYMBOL_SIZE + TARGET_ADDRESS_SIZE;
 
   /** Offset of the flags field inside an arc. */
   public final static int FLAGS_OFFSET = 0;
@@ -52,8 +55,11 @@ final class ConstantArcSizeFSA extends FSA {
   /** Offset of the label field inside an arc. */
   public final static int LABEL_OFFSET = FLAGS_SIZE;
 
+  /** Offset of the output symbol field inside an arc. */
+  public final static int OUTPUT_SYMBOL_OFFSET = LABEL_SIZE;
+
   /** Offset of the address field inside an arc. */
-  public final static int ADDRESS_OFFSET = LABEL_OFFSET + LABEL_SIZE;
+  public final static int ADDRESS_OFFSET = OUTPUT_SYMBOL_OFFSET + OUTPUT_SYMBOL_SIZE;
 
   /** A dummy address of the terminal state. */
   final static int TERMINAL_STATE = 0;
@@ -130,7 +136,7 @@ final class ConstantArcSizeFSA extends FSA {
 
   @Override
   public int getOutputSymbol(int arc) {
-    return outputSymbols.get(arc);
+    return data[arc + OUTPUT_SYMBOL_OFFSET];
   }
 
   /**
