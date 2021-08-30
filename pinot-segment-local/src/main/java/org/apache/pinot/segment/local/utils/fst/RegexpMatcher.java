@@ -91,10 +91,14 @@ public class RegexpMatcher {
     }
 
     // Automaton start state and FST start node is added to the queue.
-    queue.add(new Path<>(0, _fst.getFirstArc(new FST.Arc<Long>()), _fst.outputs.getNoOutput(), new IntsRefBuilder()));
+    queue.add(new Path<>(0, _fst.getFirstArc(new FST.Arc<Long>()), _fst.outputs.getNoOutput(), new IntsRefBuilder(),
+        "*"));
 
     final FST.Arc<Long> scratchArc = new FST.Arc<>();
     final FST.BytesReader fstReader = _fst.getBytesReader();
+
+    //TODO: atri
+    List<String> tempList = new ArrayList<>();
 
     Transition t = new Transition();
     while (queue.size() != 0) {
@@ -104,6 +108,9 @@ public class RegexpMatcher {
       // contains the result set.
       if (_automaton.isAccept(path.state)) {
         if (path.fstNode.isFinal()) {
+          //TODO: atri
+          tempList.add(path.foo);
+
           endNodes.add(path);
         }
       }
@@ -122,7 +129,10 @@ public class RegexpMatcher {
             newInput.copyInts(currentInput.get());
             newInput.append(t.min);
             queue.add(new Path<Long>(t.dest, new FST.Arc<Long>().copyFrom(nextArc),
-                _fst.outputs.add(path.output, nextArc.output), newInput));
+                _fst.outputs.add(path.output, nextArc.output), newInput,
+                path.foo.concat(
+                    String.valueOf(nextArc.label))));
+
           }
         } else {
           FST.Arc<Long> nextArc = Util.readCeilArc(min, _fst, path.fstNode, scratchArc, fstReader);
@@ -132,7 +142,8 @@ public class RegexpMatcher {
             newInput.append(nextArc.label);
             queue.add(
                 new Path<>(t.dest, new FST.Arc<Long>().copyFrom(nextArc), _fst.outputs.add(path.output, nextArc.output),
-                    newInput));
+                    newInput, path.foo.concat(
+                    String.valueOf(nextArc.label))));
             nextArc = nextArc.isLast() ? null : _fst.readNextRealArc(nextArc, fstReader);
           }
         }
@@ -144,6 +155,10 @@ public class RegexpMatcher {
     for (Path<Long> path : endNodes) {
       matchedIds.add(path.output);
     }
+
+    //TODO: atri
+    //System.out.println("SECOND LIST IS " + tempList);
+
     return matchedIds;
   }
 
@@ -153,11 +168,16 @@ public class RegexpMatcher {
     public final T output;
     public final IntsRefBuilder input;
 
-    public Path(int state, FST.Arc<T> fstNode, T output, IntsRefBuilder input) {
+    public String foo = new String();
+
+    public Path(int state, FST.Arc<T> fstNode, T output, IntsRefBuilder input,
+        String bar) {
       this.state = state;
       this.fstNode = fstNode;
       this.output = output;
       this.input = input;
+
+      foo = foo.concat(bar);
     }
   }
 }
