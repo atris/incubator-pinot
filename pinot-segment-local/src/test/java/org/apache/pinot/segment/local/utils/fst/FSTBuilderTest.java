@@ -39,11 +39,11 @@ import org.testng.annotations.Test;
 
 public class FSTBuilderTest {
     private static final File TEMP_DIR =
-            new File(FileUtils.getTempDirectory(), "FST");
+        new File(FileUtils.getTempDirectory(), "FST");
 
     @BeforeClass
     public void setUp()
-            throws Exception {
+        throws Exception {
         FileUtils.deleteDirectory(TEMP_DIR);
         TEMP_DIR.mkdirs();
     }
@@ -95,7 +95,7 @@ public class FSTBuilderTest {
 
     @AfterClass
     public void tearDown()
-            throws IOException {
+        throws IOException {
         FileUtils.deleteDirectory(TEMP_DIR);
     }
 }
