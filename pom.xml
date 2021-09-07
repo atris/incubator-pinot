@@ -54,7 +54,6 @@
     <module>pinot-distribution</module>
     <module>pinot-connectors</module>
     <module>pinot-segment-local</module>
-    <module>pinot-fsa</module>
   </modules>
 
   <licenses>
