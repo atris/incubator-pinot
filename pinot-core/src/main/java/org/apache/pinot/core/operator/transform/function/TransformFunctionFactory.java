@@ -238,6 +238,40 @@ public class TransformFunctionFactory {
     }
   }
 
+  public static TransformFunction get(FunctionContext functionContext, Map<String, DataSource> dataSourceMap) {
+    assert functionContext.getType() == FunctionContext.Type.TRANSFORM;
+
+    TransformFunction transformFunction;
+
+    String functionName = canonicalize(functionContext.getFunctionName());
+    List<ExpressionContext> arguments = functionContext.getArguments();
+    int numArguments = arguments.size();
+
+    Class<? extends TransformFunction> transformFunctionClass = TRANSFORM_FUNCTION_MAP.get(functionName);
+    if (transformFunctionClass == null) {
+      throw new IllegalArgumentException("Unknown Transform Function");
+    }
+
+    try {
+      transformFunction = transformFunctionClass.newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException("Caught exception while constructing transform function: " + functionName, e);
+    }
+
+    List<TransformFunction> transformFunctionArguments = new ArrayList<>(numArguments);
+    for (ExpressionContext argument : arguments) {
+      transformFunctionArguments.add(TransformFunctionFactory.get(argument, dataSourceMap));
+    }
+    try {
+      transformFunction.init(transformFunctionArguments, dataSourceMap);
+    } catch (Exception e) {
+      throw new BadQueryRequestException("Caught exception while initializing transform function: " + functionName,
+          e);
+    }
+
+    return transformFunction;
+  }
+
   private static String canonicalize(String functionName) {
     return StringUtils.remove(functionName, '_').toLowerCase();
   }

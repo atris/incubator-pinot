@@ -72,6 +72,7 @@ public class CountAggregationFunction implements AggregationFunction<Long, Long>
 
   @Override
   public void aggregate(int length, AggregationResultHolder aggregationResultHolder,
+
       Map<ExpressionContext, BlockValSet> blockValSetMap) {
     if (blockValSetMap.isEmpty()) {
       aggregationResultHolder.setValue(aggregationResultHolder.getDoubleResult() + length);

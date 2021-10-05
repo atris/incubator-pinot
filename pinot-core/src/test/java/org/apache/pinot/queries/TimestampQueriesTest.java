@@ -121,7 +121,8 @@ public class TimestampQueriesTest extends BaseQueriesTest {
   @Test
   public void testQueries() {
     {
-      String query = "SELECT * FROM testTable";
+      String query = "SELECT COUNT(*) FILTER (WHERE timestampColumn > '2021-01-01 00:00:00.005'), timestampColumn FROM testTable WHERE timestampColumn > '2021-01-01"
+          + "00:00:00.123' GROUP BY timestampColumn";
       BrokerResponseNative brokerResponse = getBrokerResponseForSqlQuery(query);
       ResultTable resultTable = brokerResponse.getResultTable();
       DataSchema dataSchema = resultTable.getDataSchema();

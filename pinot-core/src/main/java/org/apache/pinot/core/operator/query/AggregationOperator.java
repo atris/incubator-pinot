@@ -61,6 +61,7 @@ public class AggregationOperator extends BaseOperator<IntermediateResultsBlock> 
       aggregationExecutor = new DefaultAggregationExecutor(_aggregationFunctions);
     }
     TransformBlock transformBlock;
+
     while ((transformBlock = _transformOperator.nextBlock()) != null) {
       _numDocsScanned += transformBlock.getNumDocs();
       aggregationExecutor.aggregate(transformBlock);

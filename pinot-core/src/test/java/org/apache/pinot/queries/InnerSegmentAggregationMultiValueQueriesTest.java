@@ -66,6 +66,36 @@ public class InnerSegmentAggregationMultiValueQueriesTest extends BaseMultiValue
   }
 
   @Test
+  public void testAggregationOnlyFooBar() {
+    //String query = "SELECT" + AGGREGATION + " FROM testTable";
+    //String query = "SELECT COUNT(*) FILTER(WHERE column1 > 5), column1 FROM testTable WHERE column1 < 100";
+    //String query = "SELECT COUNT(*) FILTER(WHERE column1 > 5 AND column2 < 6), SUM(column2) FILTER (WHERE column1 < 10), column1 FROM testTable WHERE column1 < 100";
+    //String query = "SELECT COUNT(*), SUM(column2), column1 FROM testTable";
+    String query = "SELECT COUNT(*) FILTER(WHERE column1 > 5), SUM(column2), column1 FROM testTable WHERE column1 > 0";
+    //String query = "SELECT SUM(column2), column1 FROM testTable";
+
+    // Test query without filter.
+    AggregationOperator aggregationOperator = getOperatorForSqlQuery(query);
+    IntermediateResultsBlock resultsBlock = aggregationOperator.nextBlock();
+    QueriesTestUtils
+        .testInnerSegmentExecutionStatistics(aggregationOperator.getExecutionStatistics(), 100000L, 0L, 400000L,
+            100000L);
+    QueriesTestUtils
+        .testInnerSegmentAggregationResult(resultsBlock.getAggregationResult(), 100000L, 100991525475000L, 2147434110,
+            1182655, 83439903673981L, 100000L);
+
+    // Test query with filter.
+    aggregationOperator = getOperatorForSqlQueryWithFilter(query);
+    resultsBlock = aggregationOperator.nextBlock();
+    QueriesTestUtils
+        .testInnerSegmentExecutionStatistics(aggregationOperator.getExecutionStatistics(), 15620L, 275416, 62480L,
+            100000L);
+    QueriesTestUtils
+        .testInnerSegmentAggregationResult(resultsBlock.getAggregationResult(), 15620L, 17287754700747L, 999943053,
+            1182655, 11017594448983L, 15620L);
+  }
+
+  @Test
   public void testMultiValueAggregationOnly() {
     String query = "SELECT" + MULTI_VALUE_AGGREGATION + " FROM testTable";
 
