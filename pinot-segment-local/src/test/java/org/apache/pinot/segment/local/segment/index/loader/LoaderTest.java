@@ -73,6 +73,7 @@ public class LoaderTest {
 
   private static final String TEXT_INDEX_COL_NAME = "column5";
   private static final String FST_INDEX_COL_NAME = "column5";
+  private static final String NATIVE_FST_INDEX_COL_NAME = "column5";
 
   private File _avroFile;
   private File _indexDir;
@@ -296,7 +297,9 @@ public class LoaderTest {
         SegmentTestUtils.getSegmentGeneratorConfigWithoutTimeColumn(_avroFile, INDEX_DIR, "testTable");
     SegmentIndexCreationDriver driver = SegmentCreationDriverFactory.get(null);
     List<String> fstIndexCreationColumns = Lists.newArrayList(FST_INDEX_COL_NAME);
+    List<String> nativeFSTIndexCreationColumns = Lists.newArrayList(NATIVE_FST_INDEX_COL_NAME);
     segmentGeneratorConfig.setFSTIndexCreationColumns(fstIndexCreationColumns);
+    segmentGeneratorConfig.setNativeFSTIndexCreationColumns(nativeFSTIndexCreationColumns);
     segmentGeneratorConfig.setSegmentVersion(segmentVersion);
     driver.init(segmentGeneratorConfig);
     driver.build();
@@ -316,6 +319,7 @@ public class LoaderTest {
 
     IndexLoadingConfig indexLoadingConfig = new IndexLoadingConfig();
     indexLoadingConfig.setFSTIndexColumns(new HashSet<>(Arrays.asList(FST_INDEX_COL_NAME)));
+    indexLoadingConfig.setNativeFSTIndexColumnsFSTIndexColumns(new HashSet<>(Arrays.asList(NATIVE_FST_INDEX_COL_NAME)));
     indexLoadingConfig.setReadMode(ReadMode.mmap);
     IndexSegment indexSegment = ImmutableSegmentLoader.load(_indexDir, indexLoadingConfig);
     // check that loaded segment version is v3
@@ -371,6 +375,7 @@ public class LoaderTest {
     // be able to create fst index reader with on-disk version V1
     indexLoadingConfig = new IndexLoadingConfig();
     indexLoadingConfig.setFSTIndexColumns(new HashSet<>(Arrays.asList(FST_INDEX_COL_NAME)));
+    indexLoadingConfig.setNativeFSTIndexColumnsFSTIndexColumns(new HashSet<>(Arrays.asList(NATIVE_FST_INDEX_COL_NAME)));
     indexLoadingConfig.setReadMode(ReadMode.mmap);
     indexSegment = ImmutableSegmentLoader.load(_indexDir, indexLoadingConfig);
     // check that loaded segment version is v1

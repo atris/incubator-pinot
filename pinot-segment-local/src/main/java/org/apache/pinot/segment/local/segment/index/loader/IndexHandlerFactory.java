@@ -24,6 +24,7 @@ import org.apache.pinot.segment.local.segment.index.loader.invertedindex.H3Index
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.InvertedIndexHandler;
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.JsonIndexHandler;
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.LuceneFSTIndexHandler;
+import org.apache.pinot.segment.local.segment.index.loader.invertedindex.NativeFSTIndexHandler;
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.RangeIndexHandler;
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.TextIndexHandler;
 import org.apache.pinot.segment.spi.index.metadata.SegmentMetadataImpl;
@@ -49,6 +50,8 @@ public class IndexHandlerFactory {
         return new TextIndexHandler(indexDir, segmentMetadata, indexLoadingConfig, segmentWriter);
       case FST_INDEX:
         return new LuceneFSTIndexHandler(indexDir, segmentMetadata, indexLoadingConfig, segmentWriter);
+      case NATIVE_FST_INDEX:
+        return new NativeFSTIndexHandler(indexDir, segmentMetadata, indexLoadingConfig, segmentWriter);
       case JSON_INDEX:
         return new JsonIndexHandler(indexDir, segmentMetadata, indexLoadingConfig, segmentWriter);
       case H3_INDEX:

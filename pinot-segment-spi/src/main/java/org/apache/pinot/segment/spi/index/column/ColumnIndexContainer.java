@@ -61,6 +61,11 @@ public interface ColumnIndexContainer extends Closeable {
   TextIndexReader getFSTIndex();
 
   /**
+   * Returns the Native FST index for the column, or {@code null} if it does not exist.
+   */
+  TextIndexReader getNativeFSTIndex();
+
+  /**
    * Returns the json index for the column, or {@code null} if it does not exist.
    */
   JsonIndexReader getJsonIndex();

@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.xml.crypto.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pinot.common.request.context.predicate.Predicate;
 import org.apache.pinot.core.operator.filter.predicate.PredicateEvaluator;
@@ -63,10 +64,10 @@ public class FilterOperatorUtils {
       }
       return new ScanBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
     } else if (predicateType == Predicate.Type.REGEXP_LIKE) {
-      if (dataSource.getFSTIndex() != null && dataSource.getDataSourceMetadata().isSorted()) {
+      if (isFSTIndexPresent(dataSource) && dataSource.getDataSourceMetadata().isSorted()) {
         return new SortedIndexBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
       }
-      if (dataSource.getFSTIndex() != null && dataSource.getInvertedIndex() != null) {
+      if (isFSTIndexPresent(dataSource) && dataSource.getInvertedIndex() != null) {
         return new BitmapBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
       }
       return new ScanBasedFilterOperator(predicateEvaluator, dataSource, numDocs);
@@ -200,5 +201,14 @@ public class FilterOperatorUtils {
       // Lower priority for multi-value column
       return basePriority + 1;
     }
+  }
+
+  /**
+   * Perform a composite check to see if there is a FST index present
+   * @param dataSource Datasource to be checked
+   * @return
+   */
+  private static boolean isFSTIndexPresent(DataSource dataSource) {
+    return (dataSource.getFSTIndex() != null || dataSource.getNativeFSTIndex() != null);
   }
 }
