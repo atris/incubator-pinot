@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
-import org.apache.pinot.segment.local.segment.creator.impl.inv.text.LuceneFSTIndexCreator;
 import org.apache.pinot.segment.local.segment.index.loader.IndexHandler;
 import org.apache.pinot.segment.local.segment.index.loader.IndexLoadingConfig;
 import org.apache.pinot.segment.local.segment.index.loader.LoaderUtils;
+import org.apache.pinot.segment.local.utils.nativefst.NativeFSTIndexCreator;
 import org.apache.pinot.segment.spi.ColumnMetadata;
 import org.apache.pinot.segment.spi.SegmentMetadata;
 import org.apache.pinot.segment.spi.creator.SegmentVersion;
@@ -41,7 +41,7 @@ import static org.apache.pinot.segment.spi.V1Constants.Indexes.FST_INDEX_FILE_EX
 
 
 public class NativeFSTIndexHandler implements IndexHandler {
-  private static final Logger LOGGER = LoggerFactory.getLogger(LuceneFSTIndexHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(NativeFSTIndexHandler.class);
 
   private final File _indexDir;
   private final SegmentMetadata _segmentMetadata;
@@ -110,13 +110,13 @@ public class NativeFSTIndexHandler implements IndexHandler {
 
     LOGGER.info("Creating new FST index for column: {} in segment: {}, cardinality: {}", column, segmentName,
         columnMetadata.getCardinality());
-    LuceneFSTIndexCreator luceneFSTIndexCreator = new LuceneFSTIndexCreator(_indexDir, column, null);
+    NativeFSTIndexCreator nativeFSTIndexCreator = new NativeFSTIndexCreator(_indexDir, column, null);
     try (Dictionary dictionary = LoaderUtils.getDictionary(_segmentWriter, columnMetadata)) {
       for (int dictId = 0; dictId < dictionary.length(); dictId++) {
-        luceneFSTIndexCreator.add(dictionary.getStringValue(dictId));
+        nativeFSTIndexCreator.add(dictionary.getStringValue(dictId));
       }
     }
-    luceneFSTIndexCreator.seal();
+    nativeFSTIndexCreator.seal();
 
     // For v3, write the generated range index file into the single file and remove it.
     if (_segmentMetadata.getVersion() == SegmentVersion.v3) {

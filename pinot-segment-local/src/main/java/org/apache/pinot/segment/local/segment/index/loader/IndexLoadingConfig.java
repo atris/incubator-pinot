@@ -207,7 +207,7 @@ public class IndexLoadingConfig {
         String column = fieldConfig.getName();
         if (fieldConfig.getIndexType() == FieldConfig.IndexType.FST) {
           _fstIndexColumns.add(column);
-        } else {
+        } else if (fieldConfig.getIndexType() == FieldConfig.IndexType.NATIVE_FST) {
           _nativeFSTIndexColumns.add(column);
         }
       }
