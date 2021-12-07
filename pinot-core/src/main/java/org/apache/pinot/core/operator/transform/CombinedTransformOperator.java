@@ -25,7 +25,6 @@ import org.apache.pinot.common.request.context.ExpressionContext;
 import org.apache.pinot.core.operator.blocks.CombinedTransformBlock;
 import org.apache.pinot.core.operator.blocks.TransformBlock;
 import org.apache.pinot.core.operator.filter.BaseFilterOperator;
-import org.apache.pinot.core.operator.filter.MatchAllFilterOperator;
 
 
 /**
