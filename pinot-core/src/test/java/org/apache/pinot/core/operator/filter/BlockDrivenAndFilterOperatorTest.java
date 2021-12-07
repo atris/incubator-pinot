@@ -32,7 +32,6 @@ import org.apache.pinot.common.request.context.ExpressionContext;
 import org.apache.pinot.core.common.BlockDocIdIterator;
 import org.apache.pinot.core.operator.DocIdSetOperator;
 import org.apache.pinot.core.operator.ProjectionOperator;
-import org.apache.pinot.core.operator.VisitableOperator;
 import org.apache.pinot.core.operator.blocks.TransformBlock;
 import org.apache.pinot.core.operator.transform.TransformOperator;
 import org.apache.pinot.core.plan.DocIdSetPlanNode;
@@ -227,8 +226,6 @@ public class BlockDrivenAndFilterOperatorTest {
     Set<Integer> resultSet = new HashSet<>();
 
     while (transformBlock != null) {
-      ((VisitableOperator) blockDrivenAndFilterOperator).accept(transformBlock);
-
       BlockDocIdIterator blockDocIdIterator = blockDrivenAndFilterOperator.getNextBlock()
           .getBlockDocIdSet().iterator();
 

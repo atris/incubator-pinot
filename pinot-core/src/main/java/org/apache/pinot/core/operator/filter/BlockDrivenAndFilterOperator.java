@@ -23,7 +23,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.pinot.core.common.BlockDocIdSet;
 import org.apache.pinot.core.common.Operator;
-import org.apache.pinot.core.operator.VisitableOperator;
 import org.apache.pinot.core.operator.blocks.FilterBlock;
 import org.apache.pinot.core.operator.blocks.TransformBlock;
 import org.apache.pinot.core.operator.dociditerators.ArrayBasedDocIdIterator;
@@ -38,8 +37,7 @@ import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
  * Performs an AND operation on top of a Filter Block DocIDSet
  * and a block from the given filter operator.
  */
-public class BlockDrivenAndFilterOperator extends BaseFilterOperator
-    implements VisitableOperator {
+public class BlockDrivenAndFilterOperator extends BaseFilterOperator {
   private static final String OPERATOR_NAME = "BlockDrivenAndFilterOperator";
 
   private final BaseFilterOperator _filterOperator;
@@ -80,47 +78,5 @@ public class BlockDrivenAndFilterOperator extends BaseFilterOperator
   @Override
   public String toExplainString() {
     return null;
-  }
-
-  @Override
-  public <T> void accept(T incomingObject) {
-
-    if (incomingObject == null) {
-      return;
-    }
-
-    if (!(incomingObject instanceof TransformBlock)) {
-      return;
-    }
-    
-    org.apache.pinot.core.operator.blocks.TransformBlock transformBlock =
-        (org.apache.pinot.core.operator.blocks.TransformBlock) incomingObject;
-
-    BlockDocIdSet blockDocIdSet = transformBlock.getBlockDocIdSet();
-
-    if (blockDocIdSet instanceof ArrayBasedDocIdSet) {
-
-      ArrayBasedDocIdSet arrayBasedDocIdSet = (ArrayBasedDocIdSet) blockDocIdSet;
-
-      List<Integer> dataList = new ArrayList<>();
-
-      ArrayBasedDocIdIterator arrayBasedDocIdIterator = arrayBasedDocIdSet.iterator();
-
-      int currentValue = arrayBasedDocIdIterator.next();
-      while (currentValue != Constants.EOF) {
-        dataList.add(currentValue);
-        currentValue = arrayBasedDocIdIterator.next();
-      }
-
-      int[] dataArray = dataList.stream().mapToInt(i -> i).toArray();
-
-      ImmutableRoaringBitmap immutableRoaringBitmap = ImmutableRoaringBitmap.bitmapOf(dataArray);
-
-      _filterBlockDocIdSet = new BitmapDocIdSet(immutableRoaringBitmap, _numDocs);
-    } else if (blockDocIdSet instanceof BitmapDocIdSet) {
-      _filterBlockDocIdSet = (BitmapDocIdSet) blockDocIdSet;
-    } else {
-      throw new IllegalStateException("Unknown BlockIdSet type seen");
-    }
   }
 }

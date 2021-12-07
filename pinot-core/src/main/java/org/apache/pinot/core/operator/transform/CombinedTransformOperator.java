@@ -64,13 +64,6 @@ public class CombinedTransformOperator extends TransformOperator {
 
     // Get next block from all underlying transform operators
     for (TransformOperator transformOperator : _transformOperatorList) {
-
-      // If it is a match all from main predicate, don't bother broadcasting
-      // the block to filter clause predicates
-      if (nonFilteredAggTransformBlock != null && !isMatchAll) {
-        transformOperator.accept(nonFilteredAggTransformBlock);
-      }
-
       TransformBlock transformBlock = transformOperator.getNextBlock();
 
       if (transformBlock != null) {

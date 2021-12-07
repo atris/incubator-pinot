@@ -31,7 +31,6 @@ import org.apache.pinot.core.common.Operator;
 import org.apache.pinot.core.operator.BaseOperator;
 import org.apache.pinot.core.operator.blocks.IntermediateResultsBlock;
 import org.apache.pinot.core.operator.filter.BaseFilterOperator;
-import org.apache.pinot.core.operator.filter.BlockDrivenAndFilterOperator;
 import org.apache.pinot.core.operator.query.AggregationOperator;
 import org.apache.pinot.core.operator.query.DictionaryBasedAggregationOperator;
 import org.apache.pinot.core.operator.query.MetadataBasedAggregationOperator;
@@ -73,7 +72,8 @@ public class AggregationPlanNode implements PlanNode {
 
     Pair<Pair<BaseFilterOperator, TransformOperator>,
         BaseOperator<IntermediateResultsBlock>> pair =
-        buildOperators(_queryContext.getFilter(), false);
+        buildOperators(_queryContext.getFilter() != null ?
+            List.of(_queryContext.getFilter()) : null, false);
 
     if (hasFilteredPredicates) {
       int numTotalDocs = _indexSegment.getSegmentMetadata().getTotalDocs();
@@ -144,8 +144,14 @@ public class AggregationPlanNode implements PlanNode {
 
     for (FilterContext filterContext : aggregationFunctionFilterContextsList) {
       Pair<Pair<BaseFilterOperator, TransformOperator>,
-          BaseOperator<IntermediateResultsBlock>> pair =
-          buildOperators(filterContext, true);
+          BaseOperator<IntermediateResultsBlock>> pair;
+
+      if (_queryContext.getFilter() != null) {
+        pair = buildOperators(List.of(filterContext, _queryContext.getFilter()),
+            true);
+      } else {
+        pair = buildOperators(List.of(filterContext), true);
+      }
 
       transformOperatorList.add(pair.getLeft().getRight());
     }
@@ -155,21 +161,38 @@ public class AggregationPlanNode implements PlanNode {
   }
 
   private Pair<Pair<BaseFilterOperator, TransformOperator>,
-      BaseOperator<IntermediateResultsBlock>> buildOperators(FilterContext filterContext,
+      BaseOperator<IntermediateResultsBlock>> buildOperators(List<FilterContext> filterContextList,
       boolean isFilterPredicate) {
     assert _queryContext.getAggregationFunctions() != null;
 
     int numTotalDocs = _indexSegment.getSegmentMetadata().getTotalDocs();
     AggregationFunction[] aggregationFunctions = _queryContext.getAggregationFunctions();
+    FilterPlanNode filterPlanNode;
 
-    FilterPlanNode filterPlanNode = new FilterPlanNode(_indexSegment, _queryContext, filterContext);
+    if (filterContextList == null) {
+      filterPlanNode = new FilterPlanNode(_indexSegment, _queryContext, null);
+    } else if (filterContextList.size() == 1) {
+      filterPlanNode = new FilterPlanNode(_indexSegment, _queryContext, filterContextList.get(0));
+    } else {
+      if (!isFilterPredicate) {
+        throw new IllegalStateException("Multiple FilterContext instances seen for non filter predicate");
+      }
+
+      FilterContext mainFilterContext = new FilterContext(FilterContext.Type.AND,
+          filterContextList, null);
+
+      filterPlanNode = new FilterPlanNode(_indexSegment, _queryContext, mainFilterContext);
+    }
+
     BaseFilterOperator filterOperator;
 
-    if (isFilterPredicate) {
+    /*if (isFilterPredicate) {
       filterOperator = new BlockDrivenAndFilterOperator(filterPlanNode.run(), numTotalDocs);
     } else {
       filterOperator = filterPlanNode.run();
-    }
+    }*/
+
+    filterOperator = filterPlanNode.run();
 
     Set<ExpressionContext> expressionsToTransform =
         AggregationFunctionUtils.collectExpressionsToTransform(aggregationFunctions, null);
