@@ -163,7 +163,7 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
       Assert.assertEquals(firstSetRow.length, secondSetRow.length);
 
       for (int j = 0; j < firstSetRow.length; j++) {
-        //System.out.println("FIRST " + firstSetRow[j] + " SECOND " + secondSetRow[j] + " j " + j);
+        System.out.println("FIRST " + firstSetRow[j] + " SECOND " + secondSetRow[j] + " j " + j);
         Assert.assertEquals(firstSetRow[j], secondSetRow[j]);
       }
     }
@@ -301,6 +301,26 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
     nonFilterQuery =
         "SELECT MIN(NO_INDEX_COL), MAX(INT_COL) FROM MyTable "
             + "WHERE INT_COL > 29990";
+
+    testInterSegmentAggregationQueryHelper(query, nonFilterQuery);
+
+    System.out.println("DOING");
+
+    query = "SELECT SUM(INT_COL) FILTER(WHERE INT_COL > 12345),"
+        + "SUM(INT_COL) FILTER(WHERE INT_COL < 59999) "
+        + "FROM MyTable WHERE INT_COL > 1000";
+
+    nonFilterQuery = "SELECT SUM("
+        + "CASE "
+        + "WHEN (INT_COL > 12345) THEN INT_COL "
+        + "ELSE 0 "
+        + "END) AS total_sum,"
+        + "SUM("
+        + "CASE "
+        + "WHEN (INT_COL < 59999) THEN INT_COL "
+        + "ELSE 0 "
+        + "END) AS total_max "
+        + "FROM MyTable WHERE INT_COL > 1000";
 
     testInterSegmentAggregationQueryHelper(query, nonFilterQuery);
   }
