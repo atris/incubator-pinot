@@ -20,9 +20,11 @@ package org.apache.pinot.core.query.reduce;
 
 import com.google.common.base.Preconditions;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.pinot.common.request.context.ExpressionContext;
+import org.apache.pinot.common.request.context.FilterContext;
 import org.apache.pinot.common.request.context.FunctionContext;
 import org.apache.pinot.common.utils.DataSchema;
 import org.apache.pinot.common.utils.DataSchema.ColumnDataType;
@@ -38,6 +40,8 @@ public class PostAggregationHandler {
   private final Map<FunctionContext, Integer> _aggregationFunctionIndexMap;
   private final int _numGroupByExpressions;
   private final Map<ExpressionContext, Integer> _groupByExpressionIndexMap;
+  private final Map<ExpressionContext, Integer> _filteredAggContextsIndexMap;
+  private final int _numFilteredAggregations;
   private final DataSchema _dataSchema;
   private final ValueExtractor[] _valueExtractors;
   private final DataSchema _resultDataSchema;
@@ -46,6 +50,8 @@ public class PostAggregationHandler {
     _aggregationFunctionIndexMap = queryContext.getAggregationFunctionIndexMap();
     assert _aggregationFunctionIndexMap != null;
     List<ExpressionContext> groupByExpressions = queryContext.getGroupByExpressions();
+    Map<ExpressionContext, FilterContext> filterContexts = queryContext
+        .getFilteredAggregationContexts();
     if (groupByExpressions != null) {
       _numGroupByExpressions = groupByExpressions.size();
       _groupByExpressionIndexMap = new HashMap<>();
@@ -55,6 +61,22 @@ public class PostAggregationHandler {
     } else {
       _numGroupByExpressions = 0;
       _groupByExpressionIndexMap = null;
+    }
+
+    if (filterContexts != null) {
+      _numFilteredAggregations = filterContexts.size();
+      _filteredAggContextsIndexMap = new HashMap<>();
+      Iterator<Map.Entry<ExpressionContext, FilterContext>> iterator = filterContexts.entrySet().iterator();
+      int i = 0;
+      while (iterator.hasNext()) {
+        Map.Entry<ExpressionContext, FilterContext> entry = iterator.next();
+
+        _filteredAggContextsIndexMap.put(entry.getKey(), i);
+        i++;
+      }
+    } else {
+      _numFilteredAggregations = 0;
+      _filteredAggContextsIndexMap = null;
     }
 
     // NOTE: The data schema will always have group-by expressions in the front, followed by aggregation functions of
@@ -107,6 +129,14 @@ public class PostAggregationHandler {
       if (groupByExpressionIndex != null) {
         // Group-by expression
         return new ColumnValueExtractor(groupByExpressionIndex);
+      }
+    }
+
+    if (_numFilteredAggregations > 0) {
+      Integer filteredAggExpressionIndex = _filteredAggContextsIndexMap.get(expression);
+      if (filteredAggExpressionIndex != null) {
+        // Group by expression
+        return new ColumnValueExtractor(filteredAggExpressionIndex);
       }
     }
     FunctionContext function = expression.getFunction();

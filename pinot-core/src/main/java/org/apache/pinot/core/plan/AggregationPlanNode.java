@@ -21,9 +21,11 @@ package org.apache.pinot.core.plan;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.xml.stream.events.EntityReference;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pinot.common.request.context.ExpressionContext;
 import org.apache.pinot.common.request.context.FilterContext;
@@ -139,10 +141,14 @@ public class AggregationPlanNode implements PlanNode {
       BaseFilterOperator filterOperator,
       Set<ExpressionContext> expressionsToTransform) {
     List<TransformOperator> transformOperatorList = new ArrayList<>();
-    List<FilterContext> aggregationFunctionFilterContextsList =
+    Map<ExpressionContext, FilterContext> aggregationFunctionFilterContextsMap =
         _queryContext.getFilteredAggregationContexts();
 
-    for (FilterContext filterContext : aggregationFunctionFilterContextsList) {
+    Iterator iterator = aggregationFunctionFilterContextsMap.entrySet().iterator();
+
+    while (iterator.hasNext()) {
+      Map.Entry<ExpressionContext, FilterContext> entry = (Map.Entry<ExpressionContext, FilterContext>) iterator.next();
+      FilterContext filterContext = entry.getValue();
       Pair<Pair<BaseFilterOperator, TransformOperator>,
           BaseOperator<IntermediateResultsBlock>> pair;
 

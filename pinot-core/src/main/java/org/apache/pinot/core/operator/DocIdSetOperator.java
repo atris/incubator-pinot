@@ -69,15 +69,18 @@ public class DocIdSetOperator extends BaseOperator<DocIdSetBlock> {
 
     int pos = 0;
     int[] docIds = THREAD_LOCAL_DOC_IDS.get();
+    int [] fooBar = new int[DocIdSetPlanNode.MAX_DOC_PER_CALL];
     for (int i = 0; i < _maxSizeOfDocIdSet; i++) {
       _currentDocId = _blockDocIdIterator.next();
       if (_currentDocId == Constants.EOF) {
         break;
       }
-      docIds[pos++] = _currentDocId;
+      //docIds[pos++] = _currentDocId;
+      fooBar[pos++] = _currentDocId;
     }
     if (pos > 0) {
-      return new DocIdSetBlock(docIds, pos);
+      //return new DocIdSetBlock(docIds, pos);
+      return new DocIdSetBlock(fooBar, pos);
     } else {
       return null;
     }

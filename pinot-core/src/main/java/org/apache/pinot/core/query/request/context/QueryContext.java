@@ -23,12 +23,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import javax.xml.stream.events.EntityReference;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pinot.common.request.BrokerRequest;
 import org.apache.pinot.common.request.context.ExpressionContext;
@@ -91,7 +93,7 @@ public class QueryContext {
   // Pre-calculate the aggregation functions and columns for the query so that it can be shared across all the segments
   private AggregationFunction[] _aggregationFunctions;
 
-  private List<FilterContext> _filteredAggregationContexts;
+  private Map<ExpressionContext, FilterContext> _filteredAggregationContexts;
   // TODO: Use Pair<FunctionContext, FilterContext> as key to support filtered aggregations in order-by and post
   //       aggregation
   private Map<FunctionContext, Integer> _aggregationFunctionIndexMap;
@@ -236,7 +238,7 @@ public class QueryContext {
    * Returns the filtered aggregation expressions for the query.
    */
   @Nullable
-  public List<FilterContext> getFilteredAggregationContexts() {
+  public Map<ExpressionContext, FilterContext> getFilteredAggregationContexts() {
     return _filteredAggregationContexts;
   }
 
@@ -442,13 +444,13 @@ public class QueryContext {
      */
     private void generateAggregationFunctions(QueryContext queryContext) {
       List<AggregationFunction> aggregationFunctions = new ArrayList<>();
-      List<FilterContext> filteredAggregationFunctions = new ArrayList<>();
+      Map<ExpressionContext, FilterContext> filteredAggregationFunctions = new HashMap<>();
       Map<FunctionContext, Integer> aggregationFunctionIndexMap = new HashMap<>();
 
       // Add aggregation functions in the SELECT clause
       // NOTE: DO NOT deduplicate the aggregation functions in the SELECT clause because that involves protocol change.
       List<Pair<Boolean, FunctionContext>> aggregationsInSelect = new ArrayList<>();
-      List<FilterContext> filteredAggregationContexts = new ArrayList<>();
+      Map<ExpressionContext, FilterContext> filteredAggregationContexts = new HashMap<>();
       for (ExpressionContext selectExpression : queryContext._selectExpressions) {
         getAggregations(selectExpression, aggregationsInSelect,
             filteredAggregationContexts);
@@ -466,8 +468,14 @@ public class QueryContext {
 
         aggregationFunctionIndexMap.put(function, functionIndex);
       }
-      for (FilterContext filterContext : filteredAggregationContexts) {
-        filteredAggregationFunctions.add(filterContext);
+
+      Iterator iterator = filteredAggregationContexts.entrySet().iterator();
+
+      while (iterator.hasNext()) {
+        Map.Entry<ExpressionContext, FilterContext> entry =
+            (Map.Entry<ExpressionContext, FilterContext>) iterator.next();
+
+        filteredAggregationFunctions.put(entry.getKey(), entry.getValue());
       }
 
       // Add aggregation functions in the HAVING clause but not in the SELECT clause
@@ -511,7 +519,8 @@ public class QueryContext {
      * Helper method to extract AGGREGATION FunctionContexts from the given expression.
      */
     private static void getAggregations(ExpressionContext expression,
-        List<Pair<Boolean, FunctionContext>> aggregations, List<FilterContext> filteredAggregationsContexts) {
+        List<Pair<Boolean, FunctionContext>> aggregations, Map<ExpressionContext,
+        FilterContext> filteredAggregationsContexts) {
       FunctionContext function = expression.getFunction();
       if (function == null) {
         return;
@@ -534,7 +543,7 @@ public class QueryContext {
           FilterContext filter = RequestContextUtils.getFilter(filterExpression);
 
           aggregations.add(Pair.of(true, aggregation));
-          filteredAggregationsContexts.add(filter);
+          filteredAggregationsContexts.put(expression, filter);
         } else {
           // Transform
           for (ExpressionContext argument : arguments) {
