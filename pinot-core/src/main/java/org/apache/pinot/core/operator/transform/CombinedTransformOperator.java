@@ -59,7 +59,6 @@ public class CombinedTransformOperator extends TransformOperator {
   protected TransformBlock getNextBlock() {
     List<TransformBlock> transformBlockList = new ArrayList<>();
     boolean hasTransformBlock = false;
-    boolean isMatchAll = _mainPredicateFilterOperator instanceof MatchAllFilterOperator;
     TransformBlock nonFilteredAggTransformBlock = _mainPredicateTransformOperator.getNextBlock();
 
     // Get next block from all underlying transform operators
