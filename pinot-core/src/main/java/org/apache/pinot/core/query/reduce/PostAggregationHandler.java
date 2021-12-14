@@ -22,12 +22,16 @@ import com.google.common.base.Preconditions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pinot.common.request.context.ExpressionContext;
+import org.apache.pinot.common.request.context.FilterContext;
 import org.apache.pinot.common.request.context.FunctionContext;
+import org.apache.pinot.common.request.context.RequestContextUtils;
 import org.apache.pinot.common.utils.DataSchema;
 import org.apache.pinot.common.utils.DataSchema.ColumnDataType;
 import org.apache.pinot.core.query.postaggregation.PostAggregationFunction;
 import org.apache.pinot.core.query.request.context.QueryContext;
+import org.apache.pinot.spi.config.table.FieldConfig;
 
 
 /**
@@ -36,6 +40,7 @@ import org.apache.pinot.core.query.request.context.QueryContext;
  */
 public class PostAggregationHandler {
   private final Map<FunctionContext, Integer> _aggregationFunctionIndexMap;
+  private final Map<Pair<FunctionContext, FilterContext>, Integer> _filteredAggregationsIndexMap;
   private final int _numGroupByExpressions;
   private final Map<ExpressionContext, Integer> _groupByExpressionIndexMap;
   private final DataSchema _dataSchema;
@@ -44,6 +49,7 @@ public class PostAggregationHandler {
 
   public PostAggregationHandler(QueryContext queryContext, DataSchema dataSchema) {
     _aggregationFunctionIndexMap = queryContext.getAggregationFunctionIndexMap();
+    _filteredAggregationsIndexMap = queryContext.getFilteredAgggregationsIndexMap();
     assert _aggregationFunctionIndexMap != null;
     List<ExpressionContext> groupByExpressions = queryContext.getGroupByExpressions();
     if (groupByExpressions != null) {
@@ -117,11 +123,12 @@ public class PostAggregationHandler {
       return new ColumnValueExtractor(_aggregationFunctionIndexMap.get(function) + _numGroupByExpressions);
     } else if (function.getType() == FunctionContext.Type.TRANSFORM
         && function.getFunctionName().equalsIgnoreCase("filter")) {
-      FunctionContext aggFunctionContext = function.getArguments().get(0).getFunction();
+      ExpressionContext filterExpression = function.getArguments().get(1);
+      FilterContext filter = RequestContextUtils.getFilter(filterExpression);
+      FunctionContext filterFunction = function.getArguments().get(0).getFunction();
 
-      assert aggFunctionContext.getType() == FunctionContext.Type.AGGREGATION;
-
-      return new ColumnValueExtractor(_aggregationFunctionIndexMap.get(aggFunctionContext) + _numGroupByExpressions);
+      return new ColumnValueExtractor(_filteredAggregationsIndexMap
+          .get(Pair.of(filterFunction, filter)));
     } else {
       // Post-aggregation function
       return new PostAggregationValueExtractor(function);
