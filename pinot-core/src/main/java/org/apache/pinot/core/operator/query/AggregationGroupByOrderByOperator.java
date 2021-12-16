@@ -33,6 +33,7 @@ import org.apache.pinot.core.operator.blocks.TransformBlock;
 import org.apache.pinot.core.operator.transform.TransformOperator;
 import org.apache.pinot.core.query.aggregation.function.AggregationFunction;
 import org.apache.pinot.core.query.aggregation.groupby.DefaultGroupByExecutor;
+import org.apache.pinot.core.query.aggregation.groupby.FilteredClauseGroupByExecutor;
 import org.apache.pinot.core.query.aggregation.groupby.GroupByExecutor;
 import org.apache.pinot.core.query.request.context.QueryContext;
 import org.apache.pinot.core.startree.executor.StarTreeGroupByExecutor;
@@ -100,7 +101,9 @@ public class AggregationGroupByOrderByOperator extends BaseOperator<Intermediate
     GroupByExecutor groupByExecutor;
     if (_useStarTree) {
       groupByExecutor = new StarTreeGroupByExecutor(_queryContext, _groupByExpressions, _transformOperator);
-    } else {
+    } else if (_queryContext.isHasFilteredAggregations()) {
+      groupByExecutor = new FilteredClauseGroupByExecutor(_queryContext, _groupByExpressions, _transformOperator);
+    } else  {
       groupByExecutor = new DefaultGroupByExecutor(_queryContext, _groupByExpressions, _transformOperator);
     }
     TransformBlock transformBlock;

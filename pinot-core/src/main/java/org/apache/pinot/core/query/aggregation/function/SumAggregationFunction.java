@@ -66,9 +66,17 @@ public class SumAggregationFunction extends BaseSingleInputAggregationFunction<D
   public void aggregateGroupBySV(int length, int[] groupKeyArray, GroupByResultHolder groupByResultHolder,
       Map<ExpressionContext, BlockValSet> blockValSetMap) {
     double[] valueArray = blockValSetMap.get(_expression).getDoubleValuesSV();
+
     for (int i = 0; i < length; i++) {
       int groupKey = groupKeyArray[i];
       groupByResultHolder.setValueForKey(groupKey, groupByResultHolder.getDoubleResult(groupKey) + valueArray[i]);
+      //TODO: atri
+      System.out.println("Value " + groupByResultHolder.getDoubleResult(groupKey) + " for group key " + groupKey);
+      if (groupByResultHolder.getDoubleResult(groupKey) == 5000) {
+        System.out.println("DOING 5000");
+      } else if (groupByResultHolder.getDoubleResult(groupKey) == 5002) {
+        System.out.println("DOING 5002 " + " for " + valueArray[i]);
+      }
     }
   }
 

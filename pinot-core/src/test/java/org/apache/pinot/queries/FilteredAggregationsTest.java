@@ -57,8 +57,9 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
   private static final String INT_COL_NAME = "INT_COL";
   private static final String NO_INDEX_INT_COL_NAME = "NO_INDEX_COL";
   private static final String STATIC_INT_COL_NAME = "STATIC_INT_COL";
+  private static final String MIXED_INT_COL_NAME = "MIXED_INT_COL";
   private static final Integer INT_BASE_VALUE = 0;
-  private static final Integer NUM_ROWS = 30000;
+  private static final Integer NUM_ROWS = 10;
 
 
   private IndexSegment _indexSegment;
@@ -115,6 +116,12 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
       row.putField(NO_INDEX_INT_COL_NAME, i);
       row.putField(STATIC_INT_COL_NAME, 10);
 
+      if (i % 3 == 0) {
+        row.putField(MIXED_INT_COL_NAME, i);
+      } else {
+        row.putField(MIXED_INT_COL_NAME, 0);
+      }
+
       rows.add(row);
     }
     return rows;
@@ -130,6 +137,7 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
     Schema schema = new Schema.SchemaBuilder().setSchemaName(TABLE_NAME)
         .addSingleValueDimension(NO_INDEX_INT_COL_NAME, FieldSpec.DataType.INT)
         .addSingleValueDimension(STATIC_INT_COL_NAME, FieldSpec.DataType.INT)
+        .addSingleValueDimension(MIXED_INT_COL_NAME, FieldSpec.DataType.INT)
         .addMetric(INT_COL_NAME, FieldSpec.DataType.INT).build();
     SegmentGeneratorConfig config = new SegmentGeneratorConfig(tableConfig, schema);
     config.setOutDir(INDEX_DIR.getPath());
@@ -146,6 +154,7 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
   private void testInterSegmentAggregationQueryHelper(String firstQuery, String secondQuery) {
     // SQL
     BrokerResponseNative firstBrokerResponseNative = getBrokerResponseForSqlQuery(firstQuery);
+    System.out.println("Going to second");
     BrokerResponseNative secondBrokerResponseNative = getBrokerResponseForSqlQuery(secondQuery);
     ResultTable firstResultTable = firstBrokerResponseNative.getResultTable();
     ResultTable secondResultTable = secondBrokerResponseNative.getResultTable();
@@ -166,7 +175,7 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
       Assert.assertEquals(firstSetRow.length, secondSetRow.length);
 
       for (int j = 0; j < firstSetRow.length; j++) {
-        //System.out.println("FIRST " + firstSetRow[j] + " SECOND " + secondSetRow[j] + " j " + j);
+        System.out.println("FIRST " + firstSetRow[j] + " SECOND " + secondSetRow[j] + " j " + j);
         Assert.assertEquals(firstSetRow[j], secondSetRow[j]);
       }
     }
@@ -457,18 +466,51 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
         + "FROM MyTable WHERE INT_COL < 28000 AND NO_INDEX_COL > 3000";
 
     testInterSegmentAggregationQueryHelper(query, nonFilterQuery);
+
+    query = "SELECT SUM(INT_COL) FILTER(WHERE MOD(INT_COL, STATIC_INT_COL) = 0),"
+        + "MIN(INT_COL) FILTER(WHERE INT_COL > 5000) "
+        + "FROM MyTable WHERE INT_COL < 28000 AND NO_INDEX_COL > 3000";
+
+    nonFilterQuery = "SELECT SUM("
+        + "CASE "
+        + "WHEN (MOD(INT_COL, STATIC_INT_COL) = 0) THEN INT_COL "
+        + "ELSE 0 "
+        + "END) AS total_sum,"
+        + "MIN("
+        + "CASE "
+        + "WHEN (INT_COL > 5000) THEN INT_COL "
+        + "ELSE 9999999 "
+        + "END) AS total_min "
+        + "FROM MyTable WHERE INT_COL < 28000 AND NO_INDEX_COL > 3000";
+
+    testInterSegmentAggregationQueryHelper(query, nonFilterQuery);
   }
 
   @Test
   public void testBar() {
-    String query =
-        "SELECT MIN(NO_INDEX_COL) FILTER(WHERE INT_COL > 2),"
-            + "MAX(INT_COL) FILTER(WHERE INT_COL > 2)"
-            + "FROM MyTable WHERE INT_COL < 1000";
+    /*String query = "SELECT SUM(INT_COL) FILTER(WHERE MOD(INT_COL, STATIC_INT_COL) = 0),"
+        + "MIN(INT_COL) FILTER(WHERE INT_COL > 5000) "
+        + "FROM MyTable WHERE INT_COL < 28000 AND NO_INDEX_COL > 3000"
+        + "GROUP BY INT_COL";*/
 
-    String nonFilterQuery =
-        "SELECT MIN(NO_INDEX_COL), MAX(INT_COL) FROM MyTable "
-            + "WHERE INT_COL < 1000";
+    String nonFilterQuery = "SELECT SUM("
+        + "CASE "
+        + "WHEN (INT_COL > 1) THEN INT_COL "
+        + "ELSE 0 "
+        + "END) AS total_sum "
+        + "FROM MyTable WHERE INT_COL < 9 "
+        + "GROUP BY MIXED_INT_COL";
+    String query = "SELECT SUM(INT_COL) FILTER(WHERE INT_COL > 1) "
+        + "FROM MyTable WHERE INT_COL < 9 "
+        + "GROUP BY MIXED_INT_COL";
+    //nonFilterQuery = null;
+    /*query = "SELECT SUM("
+        + "CASE "
+        + "WHEN (INT_COL < 4) THEN INT_COL "
+        + "ELSE 0 "
+        + "END) AS total_sum "
+        + "FROM MyTable WHERE INT_COL > 1 "
+        + "GROUP BY INT_COL";*/
 
     testInterSegmentAggregationQueryHelper(query, nonFilterQuery);
   }

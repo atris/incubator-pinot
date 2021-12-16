@@ -60,6 +60,7 @@ public class CombinedTransformOperator extends TransformOperator {
   @Override
   protected TransformBlock getNextBlock() {
     Map<ExpressionContext, TransformBlock> expressionContextTransformBlockMap = new HashMap<>();
+
     boolean hasBlock = false;
 
     Iterator<Map.Entry<ExpressionContext, TransformOperator>> iterator = _transformOperatorMap.entrySet().iterator();

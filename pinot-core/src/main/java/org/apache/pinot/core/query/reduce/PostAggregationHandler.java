@@ -128,7 +128,7 @@ public class PostAggregationHandler {
       FunctionContext filterFunction = function.getArguments().get(0).getFunction();
 
       return new ColumnValueExtractor(_filteredAggregationsIndexMap
-          .get(Pair.of(filterFunction, filter)));
+          .get(Pair.of(filterFunction, filter)) + _numGroupByExpressions);
     } else {
       // Post-aggregation function
       return new PostAggregationValueExtractor(function);

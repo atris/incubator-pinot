@@ -18,15 +18,26 @@
  */
 package org.apache.pinot.core.plan;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pinot.common.request.context.ExpressionContext;
+import org.apache.pinot.common.request.context.FilterContext;
+import org.apache.pinot.core.operator.BaseOperator;
+import org.apache.pinot.core.operator.blocks.IntermediateResultsBlock;
 import org.apache.pinot.core.operator.filter.BaseFilterOperator;
+import org.apache.pinot.core.operator.filter.CombinedFilterOperator;
+import org.apache.pinot.core.operator.query.AggregationGroupByOperator;
 import org.apache.pinot.core.operator.query.AggregationGroupByOrderByOperator;
+import org.apache.pinot.core.operator.transform.CombinedTransformOperator;
 import org.apache.pinot.core.operator.transform.TransformOperator;
 import org.apache.pinot.core.query.aggregation.function.AggregationFunction;
 import org.apache.pinot.core.query.aggregation.function.AggregationFunctionUtils;
+import org.apache.pinot.core.query.aggregation.function.FilterableAggregationFunction;
 import org.apache.pinot.core.query.request.context.QueryContext;
 import org.apache.pinot.core.startree.CompositePredicateEvaluator;
 import org.apache.pinot.core.startree.StarTreeUtils;
@@ -55,12 +66,94 @@ public class AggregationGroupByOrderByPlanNode implements PlanNode {
     assert _queryContext.getAggregationFunctions() != null;
     assert _queryContext.getGroupByExpressions() != null;
 
+    ExpressionContext[] groupByExpressions = _queryContext.getGroupByExpressions().toArray(new ExpressionContext[0]);
+    boolean hasFilteredPredicates = _queryContext.isHasFilteredAggregations();
+
+    Pair<FilterPlanNode, BaseFilterOperator> filterOperatorPair =
+        buildFilterOperator(_queryContext.getFilter());
+
+    Pair<TransformOperator,
+        AggregationGroupByOrderByOperator> pair =
+        buildOperators(filterOperatorPair.getRight(), filterOperatorPair.getLeft(), false,
+            null);
+
+    if (hasFilteredPredicates) {
+      int numTotalDocs = _indexSegment.getSegmentMetadata().getTotalDocs();
+      AggregationFunction[] aggregationFunctions = _queryContext.getAggregationFunctions();
+
+      Set<ExpressionContext> expressionsToTransform =
+          AggregationFunctionUtils.collectExpressionsToTransform(aggregationFunctions, groupByExpressions);
+      BaseOperator<IntermediateResultsBlock> aggregationOperator = pair.getRight();
+
+      assert pair != null && aggregationOperator != null;
+
+      //TODO: For non star tree, non filtered aggregation, share the main filter transform operator
+      TransformOperator filteredTransformOperator = buildOperatorForFilteredAggregations(pair.getLeft(),
+          filterOperatorPair.getRight(), expressionsToTransform, aggregationFunctions);
+      return new AggregationGroupByOrderByOperator(aggregationFunctions, groupByExpressions, filteredTransformOperator,
+          numTotalDocs, _queryContext, false);
+    }
+
+    return pair.getRight();
+  }
+
+  private TransformOperator buildOperatorForFilteredAggregations(TransformOperator nonFilteredTransformOperator,
+      BaseFilterOperator filterOperator,
+      Set<ExpressionContext> expressionsToTransform,
+      AggregationFunction[] aggregationFunctions) {
+    Map<ExpressionContext, TransformOperator> transformOperatorMap = new HashMap<>();
+    Map<ExpressionContext, BaseFilterOperator> baseFilterOperatorMap =
+        new HashMap<>();
+    List<Pair<ExpressionContext, Pair<FilterPlanNode, BaseFilterOperator>>> filterPredicatesAndMetadata =
+        new ArrayList<>();
+
+    for (AggregationFunction aggregationFunction : aggregationFunctions) {
+      if (aggregationFunction instanceof FilterableAggregationFunction) {
+        FilterableAggregationFunction filterableAggregationFunction =
+            (FilterableAggregationFunction) aggregationFunction;
+        Pair<FilterPlanNode, BaseFilterOperator> pair =
+            buildFilterOperator(filterableAggregationFunction.getFilterContext());
+
+        baseFilterOperatorMap.put(filterableAggregationFunction.getAssociatedExpressionContext(),
+            pair.getRight());
+        filterPredicatesAndMetadata.add(Pair.of(filterableAggregationFunction.getAssociatedExpressionContext(),
+            pair));
+      }
+    }
+
+    CombinedFilterOperator combinedFilterOperator = new CombinedFilterOperator(baseFilterOperatorMap,
+        filterOperator);
+
+    for (Pair<ExpressionContext, Pair<FilterPlanNode, BaseFilterOperator>> pair :
+        filterPredicatesAndMetadata) {
+      Pair<TransformOperator,
+          AggregationGroupByOrderByOperator> innerPair =
+          buildOperators(combinedFilterOperator, pair.getRight().getLeft(),
+              true, pair.getLeft());
+
+      transformOperatorMap.put(pair.getLeft(), innerPair.getLeft());
+    }
+
+    return new CombinedTransformOperator(transformOperatorMap, nonFilteredTransformOperator,
+        filterOperator, expressionsToTransform);
+  }
+
+  private Pair<FilterPlanNode, BaseFilterOperator> buildFilterOperator(FilterContext filterContext) {
+    FilterPlanNode filterPlanNode = new FilterPlanNode(_indexSegment, _queryContext, filterContext);
+
+    return Pair.of(filterPlanNode, filterPlanNode.run());
+  }
+
+  private Pair<TransformOperator,
+      AggregationGroupByOrderByOperator> buildOperators(BaseFilterOperator filterOperator,
+      FilterPlanNode filterPlanNode, boolean isSwimlane,
+      @Nullable ExpressionContext associatedExpContext) {
+    assert _queryContext.getAggregationFunctions() != null;
+    assert _queryContext.getGroupByExpressions() != null;
+
     int numTotalDocs = _indexSegment.getSegmentMetadata().getTotalDocs();
     AggregationFunction[] aggregationFunctions = _queryContext.getAggregationFunctions();
     ExpressionContext[] groupByExpressions = _queryContext.getGroupByExpressions().toArray(new ExpressionContext[0]);
-
-    FilterPlanNode filterPlanNode = new FilterPlanNode(_indexSegment, _queryContext);
-    BaseFilterOperator filterOperator = filterPlanNode.run();
 
     // Use star-tree to solve the query if possible
     List<StarTreeV2> starTrees = _indexSegment.getStarTrees();
@@ -78,8 +171,9 @@ public class AggregationGroupByOrderByPlanNode implements PlanNode {
               TransformOperator transformOperator =
                   new StarTreeTransformPlanNode(starTreeV2, aggregationFunctionColumnPairs, groupByExpressions,
                       predicateEvaluatorsMap, null, _queryContext.getDebugOptions()).run();
-              return new AggregationGroupByOrderByOperator(aggregationFunctions, groupByExpressions, transformOperator,
-                  numTotalDocs, _queryContext, true);
+              return Pair.of(transformOperator,
+                  new AggregationGroupByOrderByOperator(aggregationFunctions, groupByExpressions, transformOperator,
+                  numTotalDocs, _queryContext, true));
             }
           }
         }
@@ -88,10 +182,11 @@ public class AggregationGroupByOrderByPlanNode implements PlanNode {
 
     Set<ExpressionContext> expressionsToTransform =
         AggregationFunctionUtils.collectExpressionsToTransform(aggregationFunctions, groupByExpressions);
-    TransformOperator transformPlanNode =
+    TransformOperator transformOperator =
         new TransformPlanNode(_indexSegment, _queryContext, expressionsToTransform, DocIdSetPlanNode.MAX_DOC_PER_CALL,
-            filterOperator).run();
-    return new AggregationGroupByOrderByOperator(aggregationFunctions, groupByExpressions, transformPlanNode,
-        numTotalDocs, _queryContext, false);
+            filterOperator, isSwimlane, associatedExpContext).run();
+    return Pair.of(transformOperator,
+        new AggregationGroupByOrderByOperator(aggregationFunctions, groupByExpressions, transformOperator,
+        numTotalDocs, _queryContext, false));
   }
 }
