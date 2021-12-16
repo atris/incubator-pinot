@@ -134,8 +134,8 @@ public class AggregationGroupByPlanNode implements PlanNode {
       transformOperatorList.put(pair.getLeft(), innerPair.getLeft());
     }
 
-    return new CombinedTransformOperator(transformOperatorList, nonFilteredTransformOperator,
-        filterOperator, expressionsToTransform);
+    return new CombinedTransformOperator(transformOperatorList, _queryContext.getFilterExpression(),
+        expressionsToTransform);
   }
 
   private Pair<FilterPlanNode, BaseFilterOperator> buildFilterOperator(FilterContext filterContext) {

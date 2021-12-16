@@ -134,8 +134,10 @@ public class AggregationGroupByOrderByPlanNode implements PlanNode {
       transformOperatorMap.put(pair.getLeft(), innerPair.getLeft());
     }
 
-    return new CombinedTransformOperator(transformOperatorMap, nonFilteredTransformOperator,
-        filterOperator, expressionsToTransform);
+    transformOperatorMap.put(_queryContext.getFilterExpression(), nonFilteredTransformOperator);
+
+    return new CombinedTransformOperator(transformOperatorMap, _queryContext.getFilterExpression(),
+        expressionsToTransform);
   }
 
   private Pair<FilterPlanNode, BaseFilterOperator> buildFilterOperator(FilterContext filterContext) {

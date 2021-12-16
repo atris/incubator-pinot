@@ -59,7 +59,7 @@ public class FilteredAggregationsTest extends BaseQueriesTest {
   private static final String STATIC_INT_COL_NAME = "STATIC_INT_COL";
   private static final String MIXED_INT_COL_NAME = "MIXED_INT_COL";
   private static final Integer INT_BASE_VALUE = 0;
-  private static final Integer NUM_ROWS = 10;
+  private static final Integer NUM_ROWS = 30000;
 
 
   private IndexSegment _indexSegment;
