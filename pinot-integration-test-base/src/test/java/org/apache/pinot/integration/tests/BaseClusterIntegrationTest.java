@@ -38,6 +38,7 @@ import org.apache.pinot.common.utils.TarGzCompressionUtils;
 import org.apache.pinot.common.utils.config.TagNameUtils;
 import org.apache.pinot.plugin.stream.kafka.KafkaStreamConfigProperties;
 import org.apache.pinot.spi.config.table.ColumnPartitionConfig;
+import org.apache.pinot.spi.config.table.FSTType;
 import org.apache.pinot.spi.config.table.FieldConfig;
 import org.apache.pinot.spi.config.table.QueryConfig;
 import org.apache.pinot.spi.config.table.ReplicaGroupStrategyConfig;
@@ -271,6 +272,10 @@ public abstract class BaseClusterIntegrationTest extends ClusterTest {
     return null;
   }
 
+  protected FSTType getFSTType() {
+    return FSTType.LUCENE;
+  }
+
   /**
    * The following methods are based on the getters. Override the getters for non-default settings before calling these
    * methods.
@@ -306,7 +311,7 @@ public abstract class BaseClusterIntegrationTest extends ClusterTest {
         .setLoadMode(getLoadMode()).setTaskConfig(getTaskConfig()).setBrokerTenant(getBrokerTenant())
         .setServerTenant(getServerTenant()).setIngestionConfig(getIngestionConfig()).setQueryConfig(getQueryconfig())
         .setNullHandlingEnabled(getNullHandlingEnabled()).setSegmentPartitionConfig(getSegmentPartitionConfig())
-        .build();
+        .setFSTType(getFSTType()).build();
   }
 
   /**
@@ -565,7 +570,8 @@ public abstract class BaseClusterIntegrationTest extends ClusterTest {
       @Override
       public Boolean apply(@Nullable Void aVoid) {
         try {
-          return getCurrentCountStarResult() == countStarResult;
+          long currentResults = getCurrentCountStarResult();
+          return currentResults == countStarResult;
         } catch (Exception e) {
           return null;
         }

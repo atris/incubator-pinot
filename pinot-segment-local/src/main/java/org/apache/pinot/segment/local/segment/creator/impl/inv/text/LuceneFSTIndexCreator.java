@@ -21,6 +21,7 @@ package org.apache.pinot.segment.local.segment.creator.impl.inv.text;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import javax.security.sasl.SaslServer;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.fst.FST;
 import org.apache.pinot.segment.local.segment.creator.impl.SegmentColumnarIndexCreator;

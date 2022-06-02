@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.pinot.spi.config.table.CompletionConfig;
+import org.apache.pinot.spi.config.table.FSTType;
 import org.apache.pinot.spi.config.table.FieldConfig;
 import org.apache.pinot.spi.config.table.IndexingConfig;
 import org.apache.pinot.spi.config.table.QueryConfig;
@@ -114,6 +115,8 @@ public class TableConfigBuilder {
   private List<TierConfig> _tierConfigList;
   private List<TunerConfig> _tunerConfigList;
 
+  private FSTType _fstType;
+
   public TableConfigBuilder(TableType tableType) {
     _tableType = tableType;
   }
@@ -147,6 +150,11 @@ public class TableConfigBuilder {
 
   public TableConfigBuilder setTimeColumnName(String timeColumnName) {
     _timeColumnName = timeColumnName;
+    return this;
+  }
+
+  public TableConfigBuilder setFSTType(FSTType fstType) {
+    _fstType = fstType;
     return this;
   }
 
@@ -411,6 +419,7 @@ public class TableConfigBuilder {
     indexingConfig.setStarTreeIndexConfigs(_starTreeIndexConfigs);
     indexingConfig.setJsonIndexColumns(_jsonIndexColumns);
     indexingConfig.setAggregateMetrics(_aggregateMetrics);
+    indexingConfig.setFSTIndexType(_fstType);
 
     if (_customConfig == null) {
       _customConfig = new TableCustomConfig(null);
